@@ -1,5 +1,6 @@
+import abc
 import dataclasses
-from typing import Optional
+from typing import Optional, List, Union
 
 
 @dataclasses.dataclass
@@ -28,3 +29,30 @@ class Employee:
 
     def set_email(self, email: str):
         self.email = email
+
+
+class OnboardingStep(abc.ABC):
+    @property
+    @abc.abstractmethod
+    def interrupts_flow(self) -> bool:
+        """Indicates if the step fails should latter steps be processed"""
+        ...
+
+    @abc.abstractmethod
+    def run(self, employee: Employee):
+        ...
+
+    def __str__(self):
+        return type(self).__name__
+
+
+class OnboardingFailed(Exception):
+    def __init__(
+            self,
+            failed_steps: Union[List[OnboardingStep], List[str]],
+            unprocessed_steps: Union[List[OnboardingStep], List[str]],
+            employee: Employee,
+    ):
+        self.failed_steps = failed_steps
+        self.unprocessed_steps = unprocessed_steps
+        self.employee = employee
