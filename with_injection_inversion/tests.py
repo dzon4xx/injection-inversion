@@ -7,7 +7,7 @@ from with_injection_inversion.main import (
     onboard,
     Employee,
     OnboardingStep,
-    OnboardingFailed,
+    OnboardingFailedError,
     StepProcessingError,
     CreateGmailAccount,
     main,
@@ -49,10 +49,10 @@ class TestOnboard:
         )
         step_2 = Mock(spec_set=OnboardingStep, interrupts_flow=False)
 
-        with pytest.raises(OnboardingFailed) as e:
+        with pytest.raises(OnboardingFailedError) as e:
             onboard(employee, [step_1, step_2])
 
-        exc: OnboardingFailed = e.value
+        exc: OnboardingFailedError = e.value
         assert exc.failed_steps == [step_1]
         assert exc.unprocessed_steps == [step_2]
         step_1.run.assert_called_once_with(employee)
@@ -68,10 +68,10 @@ class TestOnboard:
         )
         step_2 = Mock(spec_set=OnboardingStep, interrupts_flow=False)
 
-        with pytest.raises(OnboardingFailed) as e:
+        with pytest.raises(OnboardingFailedError) as e:
             onboard(employee, [step_1, step_2])
 
-        exc: OnboardingFailed = e.value
+        exc: OnboardingFailedError = e.value
         assert exc.failed_steps == [step_1]
         assert exc.unprocessed_steps == []
         step_1.run.assert_called_once_with(employee)

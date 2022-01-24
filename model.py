@@ -46,7 +46,7 @@ class OnboardingStep(abc.ABC):
         return type(self).__name__
 
 
-class OnboardingFailed(Exception):
+class OnboardingFailedError(Exception):
     def __init__(
             self,
             failed_steps: Union[List[OnboardingStep], List[str]],

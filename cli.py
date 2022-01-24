@@ -1,7 +1,7 @@
 import argparse
 from typing import List
 
-from model import Request, Employee, OnboardingFailed
+from model import Request, Employee, OnboardingFailedError
 
 
 def parse_cli(cli_args: List[str]) -> Request:
@@ -15,7 +15,7 @@ def parse_cli(cli_args: List[str]) -> Request:
     return Request(**vars(parser.parse_args(cli_args)))
 
 
-def onboarding_failed_report(e: OnboardingFailed):
+def onboarding_failed_report(e: OnboardingFailedError):
     name = e.employee.name
     surname = e.employee.surname
     unprocessed_steps = ", ".join([str(step) for step in e.unprocessed_steps])

@@ -7,7 +7,7 @@ from model import (
     Employee,
     StepProcessingError,
     OnboardingStep,
-    OnboardingFailed,
+    OnboardingFailedError,
 )
 from third_party_clients import (
     JiraClient,
@@ -94,7 +94,7 @@ def onboard(employee: Employee, steps: List[OnboardingStep]) -> None:
                 failed_steps.append(step)
 
     if failed_steps or unprocessed_steps:
-        raise OnboardingFailed(
+        raise OnboardingFailedError(
             failed_steps=failed_steps,
             unprocessed_steps=unprocessed_steps,
             employee=employee,
@@ -119,7 +119,7 @@ def main(cli_args: List[str]):
                 CreateSlackAccount(client=SlackClient(request.slack_api_key)),
             ],
         )
-    except OnboardingFailed as e:
+    except OnboardingFailedError as e:
         onboarding_failed_report(e)
     else:
         onboarding_success_report(employee)
