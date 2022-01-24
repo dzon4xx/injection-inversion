@@ -100,7 +100,7 @@ class TestCreateGmailAccount:
 
 
 class TestCreateSlackAccount:
-    def test_run_success(self, employee):
+    def test_run_success(self):
         employee = Employee.new("Bob", "Smith")
 
         mock_client = Mock(spec_set=SlackClient, new_account=Mock())
