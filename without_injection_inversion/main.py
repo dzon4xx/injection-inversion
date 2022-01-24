@@ -47,7 +47,6 @@ def send_invitation_email(employee: Employee, content: str):
 
 
 def onboard(employee, args):
-
     failed_steps = []
     unprocessed_steps = []
 
