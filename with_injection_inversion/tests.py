@@ -98,6 +98,8 @@ class TestCreateGmailAccount:
         with pytest.raises(StepProcessingError):
             CreateGmailAccount(mock_client, "stxnext.pl").run(employee)
 
+        assert employee.email is None
+
 
 class TestCreateSlackAccount:
     def test_run_success(self):
