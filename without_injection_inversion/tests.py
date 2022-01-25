@@ -1,88 +1,129 @@
+import dataclasses
 from unittest.mock import patch, Mock, sentinel
 
 import pytest
 
-from model import StepProcessingError
-from third_party_clients import GmailException, GmailClient, SlackClient, \
-    SlackException, JiraClient, JiraException
+from model import Request, OnboardingFailedError
+from third_party_clients import (
+    GmailException,
+    GmailClient,
+    SlackClient,
+    SlackException,
+    JiraClient,
+    JiraException,
+)
 from without_injection_inversion.main import (
     main,
-    Employee,
-    create_gmail_account, create_slack_account, create_jira_account,
+    Employee, onboard,
 )
 
 
-@pytest.fixture
-def employee() -> Employee:
-    return Employee.new("Bob", "Smith")
+@dataclasses.dataclass
+class MockedClients:
+    gmail: Mock
+    jira: Mock
+    slack: Mock
 
 
-@pytest.fixture
-def api_key() -> str:
-    return "api-key"
+class TestOnboard:
+    @pytest.fixture
+    def mock_clients(self) -> MockedClients:
+        clients = MockedClients(
+            gmail=Mock(
+                spec_set=GmailClient, register=Mock(return_value=sentinel.email)
+            ),
+            jira=Mock(spec_set=JiraClient, create_account=Mock()),
+            slack=Mock(spec_set=SlackClient, new_account=Mock()),
+        )
 
+        with patch("third_party_clients.GmailClient", new=lambda *args, **kwargs: clients.gmail), patch(
+            "third_party_clients.JiraClient", new=lambda *args, **kwargs: clients.jira
+        ), patch("third_party_clients.SlackClient", new=lambda *args, **kwargs: clients.slack):
+            yield clients
 
-class TestCreateGmailAccount:
-    def test_run_success(self, api_key: str):
-        employee = Employee.new("Bob", "Smith")
-        domain = "stxnext.pl"
+    @pytest.fixture
+    def request_(self) -> Request:
+        return Request(
+            name="Bob",
+            surname="Smith",
+            gmail_api_key="gmail-api-key",
+            slack_api_key="slack-api-key",
+            jira_api_key="jira-api-key",
+            domain="stxnext.pl",
+        )
 
-        mock_client = Mock(spec_set=GmailClient, register=Mock(return_value=sentinel.email))
-        # TODO clients are patched on third_party_clients module because they are
-        #  used as third_party_clients.GmailClient in client code.
-        with patch("third_party_clients.GmailClient", Mock(return_value=mock_client)):
-            create_gmail_account(employee, domain, api_key)
+    @pytest.fixture
+    def employee(self) -> Employee:
+        return Employee.new("Bob", "Smith")
 
-        mock_client.register.assert_called_once_with(prefix="bob.smith", domain=domain)
+    def test_success(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+        onboard(employee, request_)
+        mock_clients.gmail.register.assert_called_once_with(
+            prefix="bob.smith", domain=request_.domain
+        )
+        mock_clients.jira.create_account.assert_called_once_with(
+            email=sentinel.email, user_name="bob.s"
+        )
+        mock_clients.slack.new_account.assert_called_once_with(
+            user="bob.smith", email=sentinel.email
+        )
         assert employee.email == sentinel.email
 
-    def test_run_failure(self, employee: Employee, api_key: str):
-        domain = "stxnext.pl"
-        mock_client = Mock(spec_set=GmailClient, register=Mock(side_effect=GmailException))
-        with patch(
-            "third_party_clients.GmailClient", Mock(return_value=mock_client)
-        ), pytest.raises(StepProcessingError):
-            create_gmail_account(employee, domain, api_key)
+    def test_gmail_call_failed__process_interrupted(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+        mock_clients.gmail.register.side_effect = GmailException
+        with pytest.raises(OnboardingFailedError) as exc_info:
+            onboard(employee, request_)
 
+        exc: OnboardingFailedError = exc_info.value
+        exc.failed_steps = ["CreateGmailAccount"]
+        exc.unprocessed_steps = ["CreateJiraAccount", "CreateSlackAccount"]
 
-class TestCreateSlackAccount:
-    def test_run_success(self, employee, api_key: str):
-        employee = Employee.new("Bob", "Smith")
-        mock_client = Mock(spec_set=SlackClient, new_account=Mock())
-
-        with patch("third_party_clients.SlackClient", Mock(return_value=mock_client)):
-            create_slack_account(employee, api_key)
-
-        mock_client.new_account.assert_called_once_with(user="bob.smith", email=None)
-
-    def test_run_failure(self, employee: Employee, api_key: str):
-        mock_client = Mock(spec_set=SlackClient, new_account=Mock(side_effect=SlackException))
-
-        with patch(
-                "third_party_clients.SlackClient", Mock(return_value=mock_client)
-        ), pytest.raises(StepProcessingError):
-            create_slack_account(employee, api_key)
-
-
-class TestCreateJiraAccount:
-    def test_run_success(self, api_key: str):
-        employee = Employee.new("Bob", "Smith")
-
-        mock_client = Mock(spec_set=JiraClient, create_account=Mock())
-        with patch("third_party_clients.JiraClient", Mock(return_value=mock_client)):
-            create_jira_account(employee, api_key)
-
-        mock_client.create_account.assert_called_once_with(
-            email=None, user_name="bob.s"
+        mock_clients.gmail.register.assert_called_once_with(
+            prefix="bob.smith", domain=request_.domain
         )
+        mock_clients.jira.create_account.assert_not_called()
+        mock_clients.slack.new_account.assert_not_called()
+        assert employee.email is None
 
-    def test_run_failure(self, employee: Employee, api_key: str):
-        mock_client = Mock(
-            spec_set=JiraClient, create_account=Mock(side_effect=JiraException)
+    def test_jira_call_failed__process_uninterrupted(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+        mock_clients.jira.create_account.side_effect = JiraException
+        with pytest.raises(OnboardingFailedError) as exc_info:
+            onboard(employee, request_)
+
+        exc: OnboardingFailedError = exc_info.value
+        exc.failed_steps = ["CreateJiraAccount"]
+        exc.unprocessed_steps = []
+
+        mock_clients.gmail.register.assert_called_once_with(
+            prefix="bob.smith", domain=request_.domain
         )
+        mock_clients.jira.create_account.assert_called_once_with(
+            email=sentinel.email, user_name="bob.s"
+        )
+        mock_clients.slack.new_account.assert_called_once_with(
+            user="bob.smith", email=sentinel.email
+        )
+        assert employee.email is sentinel.email
 
-        with patch("third_party_clients.JiraClient", Mock(return_value=mock_client)), pytest.raises(StepProcessingError):
-            create_jira_account(employee, api_key)
+    def test_slack_call_failed__process_uninterrupted(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+        mock_clients.slack.new_account.side_effect = SlackException
+        with pytest.raises(OnboardingFailedError) as exc_info:
+            onboard(employee, request_)
+
+        exc: OnboardingFailedError = exc_info.value
+        exc.failed_steps = ["CreateSlackAccount"]
+        exc.unprocessed_steps = []
+
+        mock_clients.gmail.register.assert_called_once_with(
+            prefix="bob.smith", domain=request_.domain
+        )
+        mock_clients.jira.create_account.assert_called_once_with(
+            email=sentinel.email, user_name="bob.s"
+        )
+        mock_clients.slack.new_account.assert_called_once_with(
+            user="bob.smith", email=sentinel.email
+        )
+        assert employee.email is sentinel.email
 
 
 class TestCliIntegration:

@@ -6,53 +6,17 @@ from cli import parse_cli, onboarding_failed_report, onboarding_success_report
 from model import Employee, StepProcessingError, OnboardingFailedError, Request
 
 
-# TODO sygnatura tej funkcji ma dużą szansę na rozrost o kolejne argumenty.
-# Np timeout, number_of_retries itd.
-# Argumenty z warstwy technicznej - api_key mieszają sie z argumentami bizensowymi - employee
-def create_jira_account(employee: Employee, api_key):
-    try:
-        # TODO Klasy klienckie muszą być używane z poziomu modułu, żeby możliwe było ich
-        # łatwe patchowanie.
-        third_party_clients.JiraClient(api_key).create_account(
-            email=employee.email, user_name=f"{employee.name.lower()}.{employee.surname.lower()[0]}"
-        )
-    except third_party_clients.JiraException as e:
-        raise StepProcessingError(f"Creating jira account failed {e}") from e
-
-
-def create_slack_account(employee: Employee, api_key: str):
-    try:
-        third_party_clients.SlackClient(api_key).new_account(
-            user=f"{employee.name.lower()}.{employee.surname.lower()}",
-            email=employee.email,
-        )
-    except third_party_clients.SlackException as e:
-        raise StepProcessingError("Creating slack account failed") from e
-
-
-def create_gmail_account(employee: Employee, domain: str, api_key: str):
-    try:
-        email = third_party_clients.GmailClient(api_key).register(
-            prefix=f"{employee.name.lower()}.{employee.surname.lower()}",
-            domain=domain,
-        )
-    except third_party_clients.GmailException as e:
-        raise StepProcessingError("Creating gmail account failed") from e
-    else:
-        employee.set_email(email)
-
-
-def send_invitation_email(employee: Employee, content: str):
-    ...
-
-
-def onboard(employee, args):
+def onboard(employee: Employee, request: Request):
     failed_steps = []
     unprocessed_steps = []
 
     try:
-        create_gmail_account(employee, args.domain, args.gmail_api_key)
-    except StepProcessingError:
+        email = third_party_clients.GmailClient(request.gmail_api_key).register(
+            prefix=f"{employee.name.lower()}.{employee.surname.lower()}",
+            domain=request.domain,
+        )
+        employee.set_email(email)
+    except third_party_clients.GmailException:
         failed_steps = ["CreateGmailAccount"]
         unprocessed_steps = ["CreateJiraAccount", "CreateSlackAccount"]
         raise OnboardingFailedError(
@@ -60,14 +24,21 @@ def onboard(employee, args):
             unprocessed_steps=unprocessed_steps,
             employee=employee
         )
+
     try:
-        create_jira_account(employee, args.jira_api_key)
-    except StepProcessingError:
+        third_party_clients.JiraClient(request.jira_api_key).create_account(
+            email=employee.email, user_name=f"{employee.name.lower()}.{employee.surname.lower()[0]}"
+        )
+    except third_party_clients.JiraException:
         failed_steps = ["CreateJiraAccount"]
         unprocessed_steps = ["CreateSlackAccount"]
+
     try:
-        create_slack_account(employee, args.slack_api_key)
-    except StepProcessingError:
+        third_party_clients.SlackClient(request.slack_api_key).new_account(
+            user=f"{employee.name.lower()}.{employee.surname.lower()}",
+            email=employee.email,
+        )
+    except third_party_clients.SlackException:
         failed_steps = ["CreateSlackAccount"]
 
     if failed_steps or unprocessed_steps:
