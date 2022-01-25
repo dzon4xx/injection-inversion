@@ -14,7 +14,8 @@ from third_party_clients import (
 )
 from without_injection_inversion.main import (
     main,
-    Employee, onboard,
+    Employee,
+    onboard,
 )
 
 
@@ -36,9 +37,13 @@ class TestOnboard:
             slack=Mock(spec_set=SlackClient, new_account=Mock()),
         )
 
-        with patch("third_party_clients.GmailClient", new=lambda *args, **kwargs: clients.gmail), patch(
+        with patch(
+            "third_party_clients.GmailClient", new=lambda *args, **kwargs: clients.gmail
+        ), patch(
             "third_party_clients.JiraClient", new=lambda *args, **kwargs: clients.jira
-        ), patch("third_party_clients.SlackClient", new=lambda *args, **kwargs: clients.slack):
+        ), patch(
+            "third_party_clients.SlackClient", new=lambda *args, **kwargs: clients.slack
+        ):
             yield clients
 
     @pytest.fixture
@@ -56,7 +61,9 @@ class TestOnboard:
     def employee(self) -> Employee:
         return Employee.new("Bob", "Smith")
 
-    def test_success(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+    def test_success(
+        self, employee: Employee, request_: Request, mock_clients: MockedClients
+    ):
         onboard(employee, request_)
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
@@ -69,7 +76,9 @@ class TestOnboard:
         )
         assert employee.email == sentinel.email
 
-    def test_gmail_call_failed__process_interrupted(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+    def test_gmail_call_failed__process_interrupted(
+        self, employee: Employee, request_: Request, mock_clients: MockedClients
+    ):
         mock_clients.gmail.register.side_effect = GmailException
         with pytest.raises(OnboardingFailedError) as exc_info:
             onboard(employee, request_)
@@ -85,7 +94,9 @@ class TestOnboard:
         mock_clients.slack.new_account.assert_not_called()
         assert employee.email is None
 
-    def test_jira_call_failed__process_uninterrupted(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+    def test_jira_call_failed__process_uninterrupted(
+        self, employee: Employee, request_: Request, mock_clients: MockedClients
+    ):
         mock_clients.jira.create_account.side_effect = JiraException
         with pytest.raises(OnboardingFailedError) as exc_info:
             onboard(employee, request_)
@@ -105,7 +116,9 @@ class TestOnboard:
         )
         assert employee.email is sentinel.email
 
-    def test_slack_call_failed__process_uninterrupted(self, employee: Employee, request_: Request, mock_clients: MockedClients):
+    def test_slack_call_failed__process_uninterrupted(
+        self, employee: Employee, request_: Request, mock_clients: MockedClients
+    ):
         mock_clients.slack.new_account.side_effect = SlackException
         with pytest.raises(OnboardingFailedError) as exc_info:
             onboard(employee, request_)

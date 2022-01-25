@@ -22,12 +22,13 @@ def onboard(employee: Employee, request: Request):
         raise OnboardingFailedError(
             failed_steps=failed_steps,
             unprocessed_steps=unprocessed_steps,
-            employee=employee
+            employee=employee,
         )
 
     try:
         third_party_clients.JiraClient(request.jira_api_key).create_account(
-            email=employee.email, user_name=f"{employee.name.lower()}.{employee.surname.lower()[0]}"
+            email=employee.email,
+            user_name=f"{employee.name.lower()}.{employee.surname.lower()[0]}",
         )
     except third_party_clients.JiraException:
         failed_steps = ["CreateJiraAccount"]
@@ -45,7 +46,7 @@ def onboard(employee: Employee, request: Request):
         raise OnboardingFailedError(
             failed_steps=failed_steps,
             unprocessed_steps=unprocessed_steps,
-            employee=employee
+            employee=employee,
         )
 
 
