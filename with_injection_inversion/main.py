@@ -70,9 +70,14 @@ class CreateGmailAccount(OnboardingStep):
             employee.set_email(email)
 
 
-# class SendInvitationEmail(OnboardingStep):
-#     def run(self, employee: Employee):
-#         ...
+class SendInvitationEmail(OnboardingStep):
+    def run(self, employee: Employee):
+        ...
+
+
+class CreateGetPaidAccount(OnboardingStep):
+    def run(self, employee: Employee):
+        ...
 
 
 def onboard(employee: Employee, steps: List[OnboardingStep]) -> None:

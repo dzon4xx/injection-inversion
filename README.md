@@ -15,3 +15,7 @@ Wymagania:
 * Aplikacja przerywa swoje działanie, jeśli nie udało się założyć maila. Jest on wymagany w kolejnych krokach
 * Aplikacja kontynuuje swoje działanie, jeśli nie udało się założyć konta w pozostałych serwisach.
 * Aplikacja raportuje efekt swojego działania wyświetlając komunikat o pomyślnym wdrożeniu pracownika, lub raport o błędach wdrożenia (niepomyślne kroki i niewykonane kroki)
+
+Wymagania 2:
+* Aplikacja wysyła email powitalny.
+* Aplikacja zakłada konto w systemie rozliczania pracowników.
