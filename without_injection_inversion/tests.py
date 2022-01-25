@@ -84,8 +84,8 @@ class TestOnboard:
             onboard(employee, request_)
 
         exc: OnboardingFailedError = exc_info.value
-        exc.failed_steps = ["CreateGmailAccount"]
-        exc.unprocessed_steps = ["CreateJiraAccount", "CreateSlackAccount"]
+        assert exc.failed_steps == ["CreateGmailAccount"]
+        assert exc.unprocessed_steps == ["CreateJiraAccount", "CreateSlackAccount"]
 
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
@@ -102,8 +102,8 @@ class TestOnboard:
             onboard(employee, request_)
 
         exc: OnboardingFailedError = exc_info.value
-        exc.failed_steps = ["CreateJiraAccount"]
-        exc.unprocessed_steps = []
+        assert exc.failed_steps == ["CreateJiraAccount"]
+        assert exc.unprocessed_steps == ["CreateSlackAccount"]
 
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
@@ -124,8 +124,8 @@ class TestOnboard:
             onboard(employee, request_)
 
         exc: OnboardingFailedError = exc_info.value
-        exc.failed_steps = ["CreateSlackAccount"]
-        exc.unprocessed_steps = []
+        assert exc.failed_steps == ["CreateSlackAccount"]
+        assert exc.unprocessed_steps == []
 
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
