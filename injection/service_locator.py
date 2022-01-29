@@ -18,15 +18,16 @@ def service_locator() -> Service:
     return service
 
 
-def client():
-    service: Service = service_locator()
-    service.run()
+class Client:
+    def run(self):
+        service = service_locator()
+        service.run()
 
 
-def injector():
+def main():
     global service
     service = Service({
         "is_test": True,
         "api_key": "qwerty",
     })
-    client()
+    Client().run()

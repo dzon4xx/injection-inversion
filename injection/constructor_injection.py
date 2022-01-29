@@ -1,5 +1,4 @@
 class Service:
-
     def __init__(self, config: dict):
         self._config: dict = config
 
@@ -7,13 +6,25 @@ class Service:
         ...
 
 
-def client(service: Service):
-    service.run()
+class Client:
+    def __init__(self, service: Service):
+        self._service: Service = service
+
+    def run(self):
+        self._service.run()
 
 
-def injector():
-    config = {
-        "is_test": False,
-        "api_key": "qwerty",
-    }
-    client(Service(config))
+def injector() -> Client:
+    return Client(
+        Service(
+            {
+                "is_test": False,
+                "api_key": "qwerty",
+            }
+        )
+    )
+
+
+def main():
+    client = injector()
+    client.run()

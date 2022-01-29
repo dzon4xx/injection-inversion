@@ -2,26 +2,37 @@ from typing import Optional
 
 
 class Service:
-
-    def __init__(self):
-        self._config: Optional[dict] = None
-
-    def set_config(self, config: dict):
-        self._config = config
+    def __init__(self, config: dict):
+        self._config: dict = config
 
     def run(self):
         ...
 
 
-def client(service: Service):
-    service.run()
+class Client:
+    def __init__(self):
+        self._service: Optional[Service] = None
+
+    def set_service(self, service: Service):
+        self._service = service
+
+    def run(self):
+        self._service.run()
 
 
-def injector():
-    config = {
-        "is_test": False,
-        "api_key": "qwerty",
-    }
-    service = Service()
-    service.set_config(config)
-    client(service)
+def injector() -> Client:
+    client = Client()
+    client.set_service(
+        Service(
+            {
+                "is_test": False,
+                "api_key": "qwerty",
+            }
+        )
+    )
+    return client
+
+
+def main():
+    client = injector()
+    client.run()

@@ -7,14 +7,14 @@ class Service:
         ...
 
 
-def client(is_test, api_key):
-    config = {
-        "is_test": is_test,
-        "api_key": api_key,
-    }
-    service = Service(config)
-    service.run()
+class Client:
+    def run(self, is_test: bool, api_key: str):
+        service = Service({
+            "is_test": is_test,
+            "api_key": api_key,
+        })
+        service.run()
 
 
-def injector():
-    client(is_test=True, api_key="qwerty")
+def main():
+    Client().run(is_test=True, api_key="qwerty")
