@@ -26,7 +26,7 @@ class CreateJiraAccount(model.OnboardingStep):
                 user_name=f"{employee.name.lower()}.{employee.surname.lower()[0]}",
             )
         except JiraException as e:
-            raise model.StepProcessingError(f"Creating jira account failed {e}") from e
+            raise model.StepProcessingError(f"Creating jira account failed") from e
 
 
 class CreateSlackAccount(model.OnboardingStep):

@@ -112,11 +112,12 @@ class TestCreateGmailAccount:
         mock_client = Mock(
             spec_set=GmailClient, register=Mock(side_effect=GmailException)
         )
-        with pytest.raises(StepProcessingError):
+        with pytest.raises(StepProcessingError) as exc_info:
             # When
             CreateGmailAccount(mock_client, "stxnext.pl").run(employee)
 
         # Then
+        assert str(exc_info.value) == "Creating gmail account failed"
         assert employee.email is None
 
 
@@ -137,9 +138,12 @@ class TestCreateSlackAccount:
         mock_client = Mock(
             spec_set=SlackClient, new_account=Mock(side_effect=SlackException)
         )
-        with pytest.raises(StepProcessingError):
+        with pytest.raises(StepProcessingError) as exc_info:
             # When
             CreateSlackAccount(mock_client).run(employee)
+
+        # Then
+        assert str(exc_info.value) == "Creating slack account failed"
 
 
 class TestCreateJiraAccount:
@@ -161,9 +165,12 @@ class TestCreateJiraAccount:
         mock_client = Mock(
             spec_set=JiraClient, create_account=Mock(side_effect=JiraException)
         )
-        with pytest.raises(StepProcessingError):
+        with pytest.raises(StepProcessingError) as exc_info:
             # When
             CreateJiraAccount(mock_client).run(employee)
+
+        # Then
+        assert str(exc_info.value) == "Creating jira account failed"
 
 
 class TestCliIntegration:
