@@ -2,11 +2,11 @@ import sys
 from typing import List
 
 import third_party_clients
-from cli import parse_cli, onboarding_failed_report, onboarding_success_report
-from model import Employee, StepProcessingError, OnboardingFailedError, Request
+import cli
+import model
 
 
-def onboard(employee: Employee, request: Request):
+def onboard(employee: model.Employee, request: model.Request):
     failed_steps = []
     unprocessed_steps = []
 
@@ -19,7 +19,7 @@ def onboard(employee: Employee, request: Request):
     except third_party_clients.GmailException:
         failed_steps = ["CreateGmailAccount"]
         unprocessed_steps = ["CreateJiraAccount", "CreateSlackAccount"]
-        raise OnboardingFailedError(
+        raise model.OnboardingFailedError(
             failed_steps=failed_steps,
             unprocessed_steps=unprocessed_steps,
             employee=employee,
@@ -43,7 +43,7 @@ def onboard(employee: Employee, request: Request):
         failed_steps = ["CreateSlackAccount"]
 
     if failed_steps or unprocessed_steps:
-        raise OnboardingFailedError(
+        raise model.OnboardingFailedError(
             failed_steps=failed_steps,
             unprocessed_steps=unprocessed_steps,
             employee=employee,
@@ -51,14 +51,14 @@ def onboard(employee: Employee, request: Request):
 
 
 def main(cli_args: List[str]):
-    request: Request = parse_cli(cli_args)
-    employee = Employee.new(request.name, request.surname)
+    request: model.Request = cli.parse_cli(cli_args)
+    employee = model.Employee.new(request.name, request.surname)
     try:
         onboard(employee, request)
-    except OnboardingFailedError as e:
-        onboarding_failed_report(e)
+    except model.OnboardingFailedError as e:
+        cli.onboarding_failed_report(e)
     else:
-        onboarding_success_report(employee)
+        cli.onboarding_success_report(employee)
 
 
 if __name__ == "__main__":
