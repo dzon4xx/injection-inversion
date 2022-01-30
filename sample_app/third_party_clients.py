@@ -6,14 +6,15 @@ class JiraException(Exception):
 
 
 class JiraClient:
-
     def __init__(self, api_key: str):
         self._api_key = api_key
 
     def create_account(self, email: str, user_name: str):
         if "INVALID" in self._api_key:
             raise JiraException("Invalid api key")
-        print(f"Jira account was successfully created. {user_name=} user_name: {email=}")
+        print(
+            f"Jira account was successfully created. {user_name=} user_name: {email=}"
+        )
 
 
 class SlackException(Exception):

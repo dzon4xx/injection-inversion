@@ -1,5 +1,4 @@
 class Service:
-
     def __init__(self, config: dict):
         self._config: dict = config
 
@@ -9,10 +8,12 @@ class Service:
 
 class Client:
     def run(self, is_test: bool, api_key: str):
-        service = Service({
-            "is_test": is_test,
-            "api_key": api_key,
-        })
+        service = Service(
+            {
+                "is_test": is_test,
+                "api_key": api_key,
+            }
+        )
         service.run()
 
 

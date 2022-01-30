@@ -2,7 +2,6 @@ from typing import Optional
 
 
 class Service:
-
     def __init__(self, config: dict):
         self._config: dict = config
 
@@ -26,8 +25,10 @@ class Client:
 
 def main():
     global service
-    service = Service({
-        "is_test": True,
-        "api_key": "qwerty",
-    })
+    service = Service(
+        {
+            "is_test": True,
+            "api_key": "qwerty",
+        }
+    )
     Client().run()

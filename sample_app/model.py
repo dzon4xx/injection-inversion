@@ -48,10 +48,10 @@ class OnboardingStep(abc.ABC):
 
 class OnboardingFailedError(Exception):
     def __init__(
-            self,
-            failed_steps: Union[List[OnboardingStep], List[str]],
-            unprocessed_steps: Union[List[OnboardingStep], List[str]],
-            employee: Employee,
+        self,
+        failed_steps: Union[List[OnboardingStep], List[str]],
+        unprocessed_steps: Union[List[OnboardingStep], List[str]],
+        employee: Employee,
     ):
         self.failed_steps = failed_steps
         self.unprocessed_steps = unprocessed_steps

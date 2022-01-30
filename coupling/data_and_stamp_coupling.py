@@ -1,11 +1,13 @@
 # Data coupling LOW COUPLING
 
+
 def power(base: int, exponent: int) -> int:
     return pow(base, exponent)
 
 
 def power_of_2(exponent: int) -> int:
     return power(2, exponent)
+
 
 ###########################################
 

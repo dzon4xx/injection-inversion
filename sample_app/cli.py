@@ -20,7 +20,9 @@ def onboarding_failed_report(e: OnboardingFailedError):
     surname = e.employee.surname
     unprocessed_steps = ", ".join([str(step) for step in e.unprocessed_steps])
     failed_steps = ", ".join([str(step) for step in e.failed_steps])
-    print(f"Employee onboarding failed. {name=} {surname=} {failed_steps=} {unprocessed_steps=}")
+    print(
+        f"Employee onboarding failed. {name=} {surname=} {failed_steps=} {unprocessed_steps=}"
+    )
 
 
 def onboarding_success_report(employee: Employee):
