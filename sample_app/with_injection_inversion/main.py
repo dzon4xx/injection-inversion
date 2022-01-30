@@ -64,6 +64,23 @@ class CreateGmailAccount(model.OnboardingStep):
             employee.set_email(email)
 
 
+class SendInvitationEmail(model.OnboardingStep):
+    interrupts_flow = False
+
+    def __init__(self, client: GmailClient):
+        self._client: GmailClient = client
+
+    def run(self, employee: model.Employee):
+        try:
+            self._client.send_email(
+                to=employee.email,
+                title="Welcome onboard!",
+                body=f"We are happy to have you with us {employee.name}",
+            )
+        except GmailException as e:
+            raise model.StepProcessingError("Sending email failed") from e
+
+
 def onboard(employee: model.Employee, steps: List[model.OnboardingStep]) -> None:
     """Runs all onboarding steps.
 
@@ -98,14 +115,14 @@ def main(cli_args: List[str]):
     # Dependencies are created externally and passed to the business function.
     try:
         employee = model.Employee.new(request.name, request.surname)
+        gmail_client = GmailClient(request.gmail_api_key)
         onboard(
             employee=employee,
             steps=[
-                CreateGmailAccount(
-                    client=GmailClient(request.gmail_api_key), domain=request.domain
-                ),
+                CreateGmailAccount(gmail_client, domain=request.domain),
                 CreateJiraAccount(client=JiraClient(request.jira_api_key)),
                 CreateSlackAccount(client=SlackClient(request.slack_api_key)),
+                SendInvitationEmail(gmail_client),
             ],
         )
     except model.OnboardingFailedError as e:

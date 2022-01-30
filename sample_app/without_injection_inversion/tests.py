@@ -76,6 +76,11 @@ class TestOnboard:
         mock_clients.slack.new_account.assert_called_once_with(
             user="bob.smith", email=sentinel.email
         )
+        mock_clients.gmail.send_email.assert_called_once_with(
+            to=sentinel.email,
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us Bob",
+        )
         assert employee.email == sentinel.email
 
     def test_gmail_call_failed__process_interrupted(
@@ -90,13 +95,14 @@ class TestOnboard:
         # Then
         exc: OnboardingFailedError = exc_info.value
         assert exc.failed_steps == ["CreateGmailAccount"]
-        assert exc.unprocessed_steps == ["CreateJiraAccount", "CreateSlackAccount"]
+        assert exc.unprocessed_steps == ["CreateJiraAccount", "CreateSlackAccount", "SendInvitationEmail"]
 
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
         )
         mock_clients.jira.create_account.assert_not_called()
         mock_clients.slack.new_account.assert_not_called()
+        mock_clients.gmail.send_email.assert_not_called()
         assert employee.email is None
 
     def test_jira_call_failed__process_uninterrupted(
@@ -111,7 +117,7 @@ class TestOnboard:
         # Then
         exc: OnboardingFailedError = exc_info.value
         assert exc.failed_steps == ["CreateJiraAccount"]
-        assert exc.unprocessed_steps == ["CreateSlackAccount"]
+        assert exc.unprocessed_steps == ["CreateSlackAccount", "SendInvitationEmail"]
 
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
@@ -121,6 +127,11 @@ class TestOnboard:
         )
         mock_clients.slack.new_account.assert_called_once_with(
             user="bob.smith", email=sentinel.email
+        )
+        mock_clients.gmail.send_email.assert_called_once_with(
+            to=sentinel.email,
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us Bob",
         )
         assert employee.email is sentinel.email
 
@@ -136,6 +147,36 @@ class TestOnboard:
         # Then
         exc: OnboardingFailedError = exc_info.value
         assert exc.failed_steps == ["CreateSlackAccount"]
+        assert exc.unprocessed_steps == ["SendInvitationEmail"]
+
+        mock_clients.gmail.register.assert_called_once_with(
+            prefix="bob.smith", domain=request_.domain
+        )
+        mock_clients.jira.create_account.assert_called_once_with(
+            email=sentinel.email, user_name="bob.s"
+        )
+        mock_clients.slack.new_account.assert_called_once_with(
+            user="bob.smith", email=sentinel.email
+        )
+        mock_clients.gmail.send_email.assert_called_once_with(
+            to=sentinel.email,
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us Bob",
+        )
+        assert employee.email is sentinel.email
+
+    def test_send_invitation_email_failed__process_uninterrupted(
+            self, employee: Employee, request_: Request, mock_clients: MockedClients
+    ):
+        # Given
+        mock_clients.gmail.send_email.side_effect = GmailException
+        with pytest.raises(OnboardingFailedError) as exc_info:
+            # When
+            onboard(employee, request_)
+
+        # Then
+        exc: OnboardingFailedError = exc_info.value
+        assert exc.failed_steps == ["SendInvitationEmail"]
         assert exc.unprocessed_steps == []
 
         mock_clients.gmail.register.assert_called_once_with(
@@ -146,6 +187,11 @@ class TestOnboard:
         )
         mock_clients.slack.new_account.assert_called_once_with(
             user="bob.smith", email=sentinel.email
+        )
+        mock_clients.gmail.send_email.assert_called_once_with(
+            to=sentinel.email,
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us Bob",
         )
         assert employee.email is sentinel.email
 
@@ -173,6 +219,7 @@ class TestCliIntegration:
             "Gmail account was successfully created. email='bob.smith@stxnext.pl'",
             "Jira account was successfully created. user_name='bob.s' user_name: email='bob.smith@stxnext.pl'",
             "Slack account was successfully created. user='bob.smith' user_name: email='bob.smith@stxnext.pl'",
+            "Sending email to='bob.smith@stxnext.pl' title='Welcome onboard!' body='We are happy to have you with us Bob'",
             "Employee onboarding successfull. name='Bob' surname='Smith' email='bob.smith@stxnext.pl'",
         ]
 
@@ -197,5 +244,5 @@ class TestCliIntegration:
         assert capsys.readouterr().out.rstrip().split("\n") == [
             "Employee onboarding failed. name='Bob' surname='Smith' "
             "failed_steps='CreateGmailAccount' unprocessed_steps='CreateJiraAccount, "
-            "CreateSlackAccount'"
+            "CreateSlackAccount, SendInvitationEmail'"
         ]

@@ -9,6 +9,7 @@ from with_injection_inversion.main import (
     CreateGmailAccount,
     CreateSlackAccount,
     CreateJiraAccount,
+    SendInvitationEmail,
 )
 
 from model import (
@@ -173,6 +174,42 @@ class TestCreateJiraAccount:
         assert str(exc_info.value) == "Creating jira account failed"
 
 
+class TestSendInvitationEmail:
+    def test_run_success(self):
+        # Given
+        employee = Employee.new("Bob", "Smith")
+        employee.set_email("bob@smith.com")
+
+        mock_client = Mock(spec_set=GmailClient, send_email=Mock())
+        # When
+        SendInvitationEmail(mock_client).run(employee)
+
+        # Then
+        mock_client.send_email.assert_called_once_with(
+            to="bob@smith.com",
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us Bob",
+        )
+
+    def test_run_failure(self, employee: Employee):
+        # Given
+        employee.set_email("bob@smith.com")
+        mock_client = Mock(
+            spec_set=GmailClient, send_email=Mock(side_effect=GmailException)
+        )
+        with pytest.raises(StepProcessingError) as exc_info:
+            # When
+            SendInvitationEmail(mock_client).run(employee)
+
+        assert str(exc_info.value) == "Sending email failed"
+
+        mock_client.send_email.assert_called_once_with(
+            to="bob@smith.com",
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us Bob",
+        )
+
+
 class TestCliIntegration:
     def test_happy_path(self, capsys):
         # When
@@ -196,6 +233,7 @@ class TestCliIntegration:
             "Gmail account was successfully created. email='bob.smith@stxnext.pl'",
             "Jira account was successfully created. user_name='bob.s' user_name: email='bob.smith@stxnext.pl'",
             "Slack account was successfully created. user='bob.smith' user_name: email='bob.smith@stxnext.pl'",
+            "Sending email to='bob.smith@stxnext.pl' title='Welcome onboard!' body='We are happy to have you with us Bob'",
             "Employee onboarding successfull. name='Bob' surname='Smith' email='bob.smith@stxnext.pl'",
         ]
 
@@ -220,5 +258,5 @@ class TestCliIntegration:
         assert capsys.readouterr().out.rstrip().split("\n") == [
             "Employee onboarding failed. name='Bob' surname='Smith' "
             "failed_steps='CreateGmailAccount' unprocessed_steps='CreateJiraAccount, "
-            "CreateSlackAccount'"
+            "CreateSlackAccount, SendInvitationEmail'"
         ]

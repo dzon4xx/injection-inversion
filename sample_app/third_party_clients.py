@@ -45,3 +45,8 @@ class GmailClient:
         email = f"{prefix}@{domain}"
         print(f"Gmail account was successfully created. {email=}")
         return email
+
+    def send_email(self, to: str, title: str, body: str):
+        if "INVALID" in self._api_key:
+            raise GmailException("Invalid api key")
+        print(f"Sending email {to=} {title=} {body=}")

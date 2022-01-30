@@ -9,16 +9,16 @@ import model
 def onboard(employee: model.Employee, request: model.Request):
     failed_steps = []
     unprocessed_steps = []
-
+    gmail_client = third_party_clients.GmailClient(request.gmail_api_key)
     try:
-        email = third_party_clients.GmailClient(request.gmail_api_key).register(
+        email = gmail_client.register(
             prefix=f"{employee.name.lower()}.{employee.surname.lower()}",
             domain=request.domain,
         )
         employee.set_email(email)
     except third_party_clients.GmailException:
         failed_steps = ["CreateGmailAccount"]
-        unprocessed_steps = ["CreateJiraAccount", "CreateSlackAccount"]
+        unprocessed_steps = ["CreateJiraAccount", "CreateSlackAccount", "SendInvitationEmail"]
         raise model.OnboardingFailedError(
             failed_steps=failed_steps,
             unprocessed_steps=unprocessed_steps,
@@ -32,7 +32,7 @@ def onboard(employee: model.Employee, request: model.Request):
         )
     except third_party_clients.JiraException:
         failed_steps = ["CreateJiraAccount"]
-        unprocessed_steps = ["CreateSlackAccount"]
+        unprocessed_steps = ["CreateSlackAccount", "SendInvitationEmail"]
 
     try:
         third_party_clients.SlackClient(request.slack_api_key).new_account(
@@ -41,6 +41,16 @@ def onboard(employee: model.Employee, request: model.Request):
         )
     except third_party_clients.SlackException:
         failed_steps = ["CreateSlackAccount"]
+        unprocessed_steps = ["SendInvitationEmail"]
+
+    try:
+        gmail_client.send_email(
+            to=employee.email,
+            title="Welcome onboard!",
+            body=f"We are happy to have you with us {employee.name}",
+        )
+    except third_party_clients.GmailException as e:
+        failed_steps = ["SendInvitationEmail"]
 
     if failed_steps or unprocessed_steps:
         raise model.OnboardingFailedError(
