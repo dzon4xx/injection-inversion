@@ -1,7 +1,7 @@
 import dataclasses
 
 
-# Subclass  HIGH COUPLING
+# Inheritance  HIGH COUPLING
 @dataclasses.dataclass
 class Base1:
     a: int
