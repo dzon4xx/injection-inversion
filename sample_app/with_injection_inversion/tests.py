@@ -5,15 +5,19 @@ import pytest
 
 from with_injection_inversion.main import (
     onboard,
+    main,
+    CreateGmailAccount,
+    CreateSlackAccount,
+    CreateJiraAccount,
+)
+
+from model import (
     Employee,
     OnboardingStep,
     OnboardingFailedError,
     StepProcessingError,
-    CreateGmailAccount,
-    main,
-    CreateSlackAccount,
-    CreateJiraAccount,
 )
+
 from third_party_clients import (
     GmailClient,
     GmailException,
@@ -31,17 +35,21 @@ def employee():
 
 class TestOnboard:
     def test_all_steps_successfull(self, employee: Employee):
+        # Given
         step_1 = Mock(spec_set=OnboardingStep, interrupts_flow=False)
         step_2 = Mock(spec_set=OnboardingStep, interrupts_flow=False)
 
+        # When
         onboard(employee, [step_1, step_2])
 
+        # Then
         step_1.run.assert_called_once_with(employee)
         step_2.run.assert_called_once_with(employee)
 
     def test_first_step_which_interrupts_flow_fails__error_raised(
         self, employee: Employee
     ):
+        # Given
         step_1 = Mock(
             spec_set=OnboardingStep,
             run=Mock(side_effect=StepProcessingError),
@@ -50,8 +58,10 @@ class TestOnboard:
         step_2 = Mock(spec_set=OnboardingStep, interrupts_flow=False)
 
         with pytest.raises(OnboardingFailedError) as e:
+            # When
             onboard(employee, [step_1, step_2])
 
+        # Then
         exc: OnboardingFailedError = e.value
         assert exc.failed_steps == [step_1]
         assert exc.unprocessed_steps == [step_2]
@@ -61,6 +71,7 @@ class TestOnboard:
     def test_first_step_which_doesnt_interrupt_flow_fails__error_raised(
         self, employee: Employee
     ):
+        # Given
         step_1 = Mock(
             spec_set=OnboardingStep,
             run=Mock(side_effect=StepProcessingError),
@@ -69,8 +80,10 @@ class TestOnboard:
         step_2 = Mock(spec_set=OnboardingStep, interrupts_flow=False)
 
         with pytest.raises(OnboardingFailedError) as e:
+            # When
             onboard(employee, [step_1, step_2])
 
+        # Then
         exc: OnboardingFailedError = e.value
         assert exc.failed_steps == [step_1]
         assert exc.unprocessed_steps == []
@@ -80,65 +93,82 @@ class TestOnboard:
 
 class TestCreateGmailAccount:
     def test_run_success(self):
+        # Given
         employee = Employee.new("Bob", "Smith")
         domain = "stxnext.pl"
 
         mock_client = Mock(
             spec_set=GmailClient, register=Mock(return_value=sentinel.email)
         )
+        # When
         CreateGmailAccount(mock_client, domain).run(employee)
 
+        # Then
         mock_client.register.assert_called_once_with(prefix="bob.smith", domain=domain)
         assert employee.email == sentinel.email
 
     def test_run_failure(self, employee: Employee):
+        # Given
         mock_client = Mock(
             spec_set=GmailClient, register=Mock(side_effect=GmailException)
         )
         with pytest.raises(StepProcessingError):
+            # When
             CreateGmailAccount(mock_client, "stxnext.pl").run(employee)
 
+        # Then
         assert employee.email is None
 
 
 class TestCreateSlackAccount:
     def test_run_success(self):
+        # Given
         employee = Employee.new("Bob", "Smith")
 
         mock_client = Mock(spec_set=SlackClient, new_account=Mock())
+        # When
         CreateSlackAccount(mock_client).run(employee)
 
+        # Then
         mock_client.new_account.assert_called_once_with(user="bob.smith", email=None)
 
     def test_run_failure(self, employee: Employee):
+        # Given
         mock_client = Mock(
             spec_set=SlackClient, new_account=Mock(side_effect=SlackException)
         )
         with pytest.raises(StepProcessingError):
+            # When
             CreateSlackAccount(mock_client).run(employee)
 
 
 class TestCreateJiraAccount:
     def test_run_success(self):
+        # Given
         employee = Employee.new("Bob", "Smith")
 
         mock_client = Mock(spec_set=JiraClient, create_account=Mock())
+        # When
         CreateJiraAccount(mock_client).run(employee)
 
+        # Then
         mock_client.create_account.assert_called_once_with(
             email=None, user_name="bob.s"
         )
 
     def test_run_failure(self, employee: Employee):
+        # Given
         mock_client = Mock(
             spec_set=JiraClient, create_account=Mock(side_effect=JiraException)
         )
         with pytest.raises(StepProcessingError):
+            # When
             CreateJiraAccount(mock_client).run(employee)
 
 
 class TestCliIntegration:
     def test_happy_path(self, capsys):
+        # When
         main(
             [
                 "--name",
@@ -154,6 +184,7 @@ class TestCliIntegration:
             ]
         )
 
+        # Then
         assert capsys.readouterr().out.rstrip().split("\n") == [
             "Gmail account was successfully created. email='bob.smith@stxnext.pl'",
             "Jira account was successfully created. user_name='bob.s' user_name: email='bob.smith@stxnext.pl'",
@@ -162,6 +193,7 @@ class TestCliIntegration:
         ]
 
     def test_failure_path(self, capsys):
+        # When
         main(
             [
                 "--name",
@@ -177,6 +209,7 @@ class TestCliIntegration:
             ]
         )
 
+        # Then
         assert capsys.readouterr().out.rstrip().split("\n") == [
             "Employee onboarding failed. name='Bob' surname='Smith' "
             "failed_steps='CreateGmailAccount' unprocessed_steps='CreateJiraAccount, "

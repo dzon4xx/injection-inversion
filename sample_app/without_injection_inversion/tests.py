@@ -3,7 +3,7 @@ from unittest.mock import patch, Mock, sentinel
 
 import pytest
 
-from model import Request, OnboardingFailedError
+from model import Request, OnboardingFailedError, Employee
 from third_party_clients import (
     GmailException,
     GmailClient,
@@ -14,7 +14,6 @@ from third_party_clients import (
 )
 from without_injection_inversion.main import (
     main,
-    Employee,
     onboard,
 )
 
@@ -64,7 +63,10 @@ class TestOnboard:
     def test_success(
         self, employee: Employee, request_: Request, mock_clients: MockedClients
     ):
+        # When
         onboard(employee, request_)
+
+        # Then
         mock_clients.gmail.register.assert_called_once_with(
             prefix="bob.smith", domain=request_.domain
         )
@@ -79,10 +81,13 @@ class TestOnboard:
     def test_gmail_call_failed__process_interrupted(
         self, employee: Employee, request_: Request, mock_clients: MockedClients
     ):
+        # Given
         mock_clients.gmail.register.side_effect = GmailException
         with pytest.raises(OnboardingFailedError) as exc_info:
+            # When
             onboard(employee, request_)
 
+        # Then
         exc: OnboardingFailedError = exc_info.value
         assert exc.failed_steps == ["CreateGmailAccount"]
         assert exc.unprocessed_steps == ["CreateJiraAccount", "CreateSlackAccount"]
@@ -97,10 +102,13 @@ class TestOnboard:
     def test_jira_call_failed__process_uninterrupted(
         self, employee: Employee, request_: Request, mock_clients: MockedClients
     ):
+        # Given
         mock_clients.jira.create_account.side_effect = JiraException
         with pytest.raises(OnboardingFailedError) as exc_info:
+            # When
             onboard(employee, request_)
 
+        # Then
         exc: OnboardingFailedError = exc_info.value
         assert exc.failed_steps == ["CreateJiraAccount"]
         assert exc.unprocessed_steps == ["CreateSlackAccount"]
@@ -119,10 +127,13 @@ class TestOnboard:
     def test_slack_call_failed__process_uninterrupted(
         self, employee: Employee, request_: Request, mock_clients: MockedClients
     ):
+        # Given
         mock_clients.slack.new_account.side_effect = SlackException
         with pytest.raises(OnboardingFailedError) as exc_info:
+            # When
             onboard(employee, request_)
 
+        # Then
         exc: OnboardingFailedError = exc_info.value
         assert exc.failed_steps == ["CreateSlackAccount"]
         assert exc.unprocessed_steps == []
@@ -141,6 +152,7 @@ class TestOnboard:
 
 class TestCliIntegration:
     def test_happy_path(self, capsys):
+        # When
         main(
             [
                 "--name",
@@ -156,6 +168,7 @@ class TestCliIntegration:
             ]
         )
 
+        # Then
         assert capsys.readouterr().out.rstrip().split("\n") == [
             "Gmail account was successfully created. email='bob.smith@stxnext.pl'",
             "Jira account was successfully created. user_name='bob.s' user_name: email='bob.smith@stxnext.pl'",
@@ -164,6 +177,7 @@ class TestCliIntegration:
         ]
 
     def test_failure_path(self, capsys):
+        # When
         main(
             [
                 "--name",
@@ -179,6 +193,7 @@ class TestCliIntegration:
             ]
         )
 
+        # Then
         assert capsys.readouterr().out.rstrip().split("\n") == [
             "Employee onboarding failed. name='Bob' surname='Smith' "
             "failed_steps='CreateGmailAccount' unprocessed_steps='CreateJiraAccount, "
