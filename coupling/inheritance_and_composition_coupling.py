@@ -3,7 +3,7 @@ import dataclasses
 
 # Inheritance  HIGH COUPLING
 @dataclasses.dataclass
-class Base1:
+class A:
     a: int
 
     def foo(self):
@@ -14,7 +14,7 @@ class Base1:
 
 
 @dataclasses.dataclass
-class A(Base1):
+class B(A):
     b: int
 
     def bar(self):
@@ -23,7 +23,7 @@ class A(Base1):
 
 # Composition # LOW COUPLING
 @dataclasses.dataclass
-class Base2:
+class C:
     a: int
 
     def foo(self):
@@ -34,9 +34,9 @@ class Base2:
 
 
 @dataclasses.dataclass
-class A:
-    base: Base2
+class D:
+    c: C
     b: int
 
     def bar(self):
-        self.base.foo()
+        self.c.foo()
