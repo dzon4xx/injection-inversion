@@ -1,8 +1,8 @@
 def foo(flag: bool):
     if flag:
-        print("The flag is True")
+        print("Do action 1")
     else:
-        print("The flag is False")
+        print("Do action 2")
 
 
 def bar():
