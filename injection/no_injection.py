@@ -1,21 +1,26 @@
-class Service:
-    def __init__(self, config: dict):
-        self._config: dict = config
-
-    def run(self):
-        ...
-
-
 class Client:
-    def run(self, is_test: bool, api_key: str):
-        service = Service(
-            {
-                "is_test": is_test,
-                "api_key": api_key,
-            }
+    def __init__(self, api_key: str, is_test: bool):
+        self._api_key = api_key
+        self._is_test = is_test
+
+    def send_request(self):
+        print("Sending message to api")
+
+
+class Service:
+    def run(self):
+        # Wyobraźmy sobie, że tutaj odczytywany jest config np z pliku.
+        config = dict(is_test=True, api_key="qwerty")
+        client = Client(
+            api_key=config["api_key"],
+            is_test=config["is_test"],
         )
-        service.run()
+        client.send_request()
 
 
 def main():
-    Client().run(is_test=True, api_key="qwerty")
+    Service().run()
+
+
+if __name__ == "__main__":
+    main()

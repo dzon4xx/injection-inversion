@@ -26,4 +26,3 @@ def main():
     a.get_len()
     b.set_config()
     a.get_len()
-

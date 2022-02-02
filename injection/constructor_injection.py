@@ -1,30 +1,34 @@
-class Service:
-    def __init__(self, config: dict):
-        self._config: dict = config
-
-    def run(self):
-        ...
-
-
 class Client:
-    def __init__(self, service: Service):
-        self._service: Service = service
+    def __init__(self, api_key: str, is_test: bool):
+        self._api_key = api_key
+        self._is_test = is_test
+
+    def send_request(self):
+        print("Sending message to api")
+
+
+class Service:
+    def __init__(self, service: Client):
+        self._client: Client = service
 
     def run(self):
-        self._service.run()
+        self._client.send_request()
 
 
-def injector() -> Client:
-    return Client(
-        Service(
-            {
-                "is_test": False,
-                "api_key": "qwerty",
-            }
+def injector() -> Service:
+    config = dict(is_test=True, api_key="qwerty")
+    return Service(
+        Client(
+            is_test=config["is_test"],
+            api_key=config["api_key"],
         )
     )
 
 
 def main():
-    client = injector()
-    client.run()
+    service = injector()
+    service.run()
+
+
+if __name__ == "__main__":
+    main()
