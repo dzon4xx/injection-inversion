@@ -7,3 +7,8 @@ class StripeClient(PaymentGatewayClient):
 
     def charge(self, user: int, amount: int):
         print(f"{user} paid {amount}")
+
+
+class PayuClient(PaymentGatewayClient):
+    def charge(self, user: int, amount: int):
+        print("Pay with payu")
