@@ -8,8 +8,8 @@ class Client:
 
 
 class Service:
-    def __init__(self, service: Client):
-        self._client: Client = service
+    def __init__(self, client: Client):
+        self._client: Client = client
 
     def run(self):
         self._client.send_request()

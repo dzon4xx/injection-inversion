@@ -2,7 +2,7 @@ from domain.entities import Order
 from domain.interfaces import PaymentGatewayClient
 
 
-def pay_for_a_product(
+def pay_for_an_order(
     user_id: int, order_id: int, payment_gateway: PaymentGatewayClient
 ):
     order = Order.get_by_id(order_id)
